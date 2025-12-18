@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Card, Tag, message, Space, Typography, Tooltip } from 'antd';
 import { SyncOutlined, ReloadOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { airQualityService } from '../services/airQualityService';
-import type { AirQuality, AuditLog } from '../types';
+import { airQualityService } from '../services/airQualityService'; // Pastikan path import benar
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale'; // Format tanggal Indonesia
+import { id } from 'date-fns/locale';
+import type { AirQuality, AuditLog } from '../types';
+
 
 const { Title, Text } = Typography;
 
@@ -22,7 +23,6 @@ const DataManagement: React.FC = () => {
       const result = await airQualityService.getAll();
       setData(result);
       
-      // Ambil juga info last sync
       const log = await airQualityService.getLastSync();
       setLastSync(log);
     } catch (error) {
@@ -41,8 +41,8 @@ const DataManagement: React.FC = () => {
     setSyncing(true);
     try {
       const res = await airQualityService.sync();
-      message.success(`Sync Selesai! ${res.syncedCount} data baru/update.`);
-      fetchData(); // Refresh tabel otomatis setelah sync
+      message.success(`Sync Selesai! ${res.syncedCount} stasiun terupdate.`);
+      fetchData(); 
     } catch (error) {
       message.error('Gagal melakukan sinkronisasi.');
     } finally {
@@ -50,19 +50,30 @@ const DataManagement: React.FC = () => {
     }
   };
 
-  // --- 3. KONFIGURASI KOLOM TABEL (Fitur Sort & Filter) ---
+  // --- 3. KONFIGURASI KOLOM TABEL ---
   const columns: ColumnsType<AirQuality> = [
     {
       title: 'Nama Stasiun / Kota',
-      dataIndex: 'stationName',
       key: 'stationName',
-      sorter: (a, b) => a.stationName.localeCompare(b.stationName),
-      // Fitur Search sederhana lewat filter
-      filters: Array.from(new Set(data.map(item => item.stationName))).map(name => ({
-        text: name,
-        value: name,
-      })),
-      onFilter: (value, record) => record.stationName.includes(value as string),
+      // Mengambil data dari nested object 'monitoredCity'
+      render: (_, record) => record.monitoredCity?.stationName || 'N/A',
+      
+      // Update logic sorting untuk nested object
+      sorter: (a, b) => {
+        const nameA = a.monitoredCity?.stationName || '';
+        const nameB = b.monitoredCity?.stationName || '';
+        return nameA.localeCompare(nameB);
+      },
+
+      // Update logic filter untuk nested object
+      filters: Array.from(new Set(data.map(item => item.monitoredCity?.stationName)))
+        .filter(Boolean) // Hapus yang null/undefined
+        .map(name => ({
+          text: name,
+          value: name as string,
+        })),
+      onFilter: (value, record) => 
+        record.monitoredCity?.stationName?.includes(value as string) || false,
     },
     {
       title: 'AQI',
@@ -95,7 +106,7 @@ const DataManagement: React.FC = () => {
       title: 'Waktu Data (Recorded)',
       dataIndex: 'recordedAt',
       key: 'recordedAt',
-      defaultSortOrder: 'descend', // Default sort: Terbaru paling atas
+      defaultSortOrder: 'descend',
       sorter: (a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime(),
       render: (date) => format(new Date(date), 'dd MMM yyyy, HH:mm', { locale: id }),
     },
@@ -114,14 +125,14 @@ const DataManagement: React.FC = () => {
         <div>
           <Title level={2} style={{ margin: 0 }}>Data Polusi Udara</Title>
           <Text type="secondary">
-            Memantau kualitas udara dari berbagai sensor kota.
+            Memantau kualitas udara dari berbagai stasiun aktif.
           </Text>
         </div>
         
         <Space>
           {/* Info Last Sync */}
           {lastSync && (
-            <Tooltip title="Waktu terakhir kali tombol Sync ditekan dan berhasil">
+            <Tooltip title={`Detail: ${lastSync.details || '-'}`}>
                <Tag icon={<HistoryOutlined />} color="blue">
                   Last Sync: {format(new Date(lastSync.performedAt), 'dd MMM HH:mm', { locale: id })}
                </Tag>
@@ -157,7 +168,7 @@ const DataManagement: React.FC = () => {
             showSizeChanger: true, 
             pageSizeOptions: ['10', '20', '50', '100'] 
           }}
-          scroll={{ x: 700 }} // Biar aman di layar kecil
+          scroll={{ x: 700 }}
         />
       </Card>
     </div>

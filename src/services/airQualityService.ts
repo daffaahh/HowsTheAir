@@ -1,5 +1,5 @@
 import api from './api';
-import type { AirQuality, AuditLog, SyncResponse } from '../types/index.ts';
+import type { AirQuality, AuditLog, SyncResponse, AirQualityHistory } from '../types/index.ts';
 
 export const airQualityService = {
   // Ambil semua data
@@ -17,6 +17,13 @@ export const airQualityService = {
   // Ambil Info Last Sync
   getLastSync: async () => {
     const response = await api.get<AuditLog>('/air-quality/last-sync');
+    return response.data;
+  },
+
+  getHistory: async (): Promise<AirQualityHistory[]> => {
+    // Panggil endpoint backend yang return data dari tabel AirQualityHistory
+    // Bisa tambahkan query param ?startDate=...&endDate=...
+    const response = await api.get('/air-quality/history'); 
     return response.data;
   },
 };

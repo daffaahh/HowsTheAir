@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ganti port sesuai port NestJS kamu (default 3000)
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = 'http://localhost:3333';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

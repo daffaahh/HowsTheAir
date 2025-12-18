@@ -4,9 +4,8 @@ import { DashboardOutlined, DatabaseOutlined, EnvironmentOutlined } from '@ant-d
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DataManagement from './pages/DataManagement';
 import Dashboard from './pages/Dashboard';
+import Cities from './pages/Cities';
 
-// Placeholder Pages (Nanti kita isi)
-const CityMaster = () => <h1>Master Kota</h1>;
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -46,7 +45,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/data" element={<DataManagement />} />
-                <Route path="/cities" element={<CityMaster />} />
+                <Route path="/cities" element={<Cities />} />
               </Routes>
             </div>
           </Content>

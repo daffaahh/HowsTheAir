@@ -1,73 +1,72 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Spin, Typography } from 'antd';
+import { Card, Col, Row, Statistic, Spin, Typography, DatePicker } from 'antd'; // Tambah DatePicker
 import { LikeOutlined, WarningOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from 'recharts';
 import { airQualityService } from '../services/airQualityService';
-import type { AirQuality } from '../types';
-import { format } from 'date-fns';
+import type { AirQualityHistory } from '../types'; // Ganti tipe data ke History
+import { format, subDays } from 'date-fns'; // Import subDays
 import { id } from 'date-fns/locale';
 
 const { Title } = Typography;
+const { RangePicker } = DatePicker;
 
-// Warna untuk Pie Chart (Sesuai kategori AQI standar)
+// Warna Chart (Sama seperti kodemu)
 const COLORS: Record<string, string> = {
-  'Good': '#52c41a', // Hijau
-  'Moderate': '#faad14', // Kuning/Oranye
-  'Unhealthy for Sensitive Groups': '#fa8c16', // Oranye tua
-  'Unhealthy': '#f5222d', // Merah
-  'Very Unhealthy': '#722ed1', // Ungu
-  'Hazardous': '#8c8c8c', // Abu-abu/Hitam
+  'Good': '#52c41a',
+  'Moderate': '#faad14',
+  'Unhealthy for Sensitive Groups': '#fa8c16',
+  'Unhealthy': '#f5222d',
+  'Very Unhealthy': '#722ed1',
+  'Hazardous': '#8c8c8c',
 };
 
 const Dashboard: React.FC = () => {
-  const [data, setData] = useState<AirQuality[]>([]);
+  // Ganti tipe state jadi AirQualityHistory
+  const [historyData, setHistoryData] = useState<AirQualityHistory[]>([]); 
   const [loading, setLoading] = useState(true);
 
-  // State untuk Data Chart
+  // State Chart
   const [pieData, setPieData] = useState<{ name: string; value: number }[]>([]);
   const [barData, setBarData] = useState<{ date: string; avgAqi: number }[]>([]);
 
   useEffect(() => {
-    fetchData();
+    fetchHistory();
   }, []);
 
-  const fetchData = async () => {
+  const fetchHistory = async () => {
     try {
-      const result = await airQualityService.getAll();
-      setData(result);
+      // PENTING: Ambil data dari endpoint HISTORY, bukan endpoint tabel snapshot
+      const result = await airQualityService.getHistory();
+      setHistoryData(result);
       processChartData(result);
     } catch (error) {
-      console.error('Failed to fetch data', error);
+      console.error('Failed to fetch dashboard data', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- LOGIC AGREGASI DATA (Client Side) ---
-  const processChartData = (rawData: AirQuality[]) => {
-    // 1. Siapkan Data Pie Chart (Group by Category)
+  const processChartData = (rawData: AirQualityHistory[]) => {
+    // 1. Pie Chart Logic (Sama, tapi pakai data history)
     const categoryCount: Record<string, number> = {};
     rawData.forEach(item => {
-      // Handle jika kategori null/undefined, masukkan ke 'Unknown'
       const cat = item.category || 'Unknown';
       categoryCount[cat] = (categoryCount[cat] || 0) + 1;
     });
 
-    const processedPie = Object.keys(categoryCount).map(key => ({
+    setPieData(Object.keys(categoryCount).map(key => ({
       name: key,
       value: categoryCount[key],
-    }));
-    setPieData(processedPie);
+    })));
 
-    // 2. Siapkan Data Bar Chart (Group by Date -> Hitung Average AQI)
-    // Kita ambil 7-14 hari terakhir saja biar grafik tetap rapi
+    // 2. Bar Chart Logic (Agregasi Harian)
     const dateGroups: Record<string, { total: number; count: number }> = {};
     
     rawData.forEach(item => {
-      // Format tanggal jadi "YYYY-MM-DD" buat grouping yang akurat
+      // Format grouping harian
       const dateKey = format(new Date(item.recordedAt), 'yyyy-MM-dd');
       
       if (!dateGroups[dateKey]) {
@@ -77,12 +76,11 @@ const Dashboard: React.FC = () => {
       dateGroups[dateKey].count += 1;
     });
 
-    // Convert ke Array & Sort berdasarkan tanggal
+    // Urutkan dan batasi 14 hari (atau sebulan sesuai request PDF)
     const processedBar = Object.keys(dateGroups)
-      .sort() // Urutkan tanggal dari lama ke baru
-      .slice(-14) // Ambil 14 hari terakhir
+      .sort() 
+      // .slice(-30) // Bisa diganti 30 hari sesuai PDF page 2
       .map(date => ({
-        // Format cantik buat label sumbu X (misal: "18 Des")
         date: format(new Date(date), 'dd MMM', { locale: id }), 
         avgAqi: Math.round(dateGroups[date].total / dateGroups[date].count),
       }));
@@ -90,63 +88,52 @@ const Dashboard: React.FC = () => {
     setBarData(processedBar);
   };
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: 100 }}>
-        <Spin size="large" tip="Memuat Data Dashboard..." />
-      </div>
-    );
-  }
+  if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
 
-  // Hitung Summary Cepat untuk Cards
-  const totalData = data.length;
-  // Hitung unik nama stasiun/kota
-  const uniqueCities = new Set(data.map(d => d.stationName)).size;
-  // Rata-rata AQI seluruh data
-  const avgAqiOverall = Math.round(data.reduce((acc, curr) => acc + curr.aqi, 0) / (totalData || 1));
+  // Kalkulasi Summary Card (Statistik)
+  const totalRecords = historyData.length;
+  // Hitung unik stasiun dari history (kalau backend kirim monitoredCity)
+  // Atau hardcode ambil dari endpoint /cities terpisah jika data history polosan
+  const uniqueStations = new Set(historyData.map(d => d.monitoredCityId)).size;
+  
+  const avgAqiAllTime = Math.round(
+    historyData.reduce((acc, curr) => acc + curr.aqi, 0) / (totalRecords || 1)
+  );
 
   return (
     <div>
-      <Title level={2} style={{ marginBottom: 24 }}>Dashboard Kualitas Udara</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>Dashboard Analitik</Title>
+        {/* Placeholder: Filter Tanggal (Sesuai PDF Page 2 Point 6) */}
+        <RangePicker onChange={() => console.log('Filter date logic here')} />
+      </div>
 
-      {/* --- SECTION 1: Summary Cards --- */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={8}>
+        <Col span={8}>
           <Card bordered={false} className="shadow-sm">
-            <Statistic 
-              title="Total Data History" 
-              value={totalData} 
-              prefix={<LikeOutlined />} 
-            />
+            <Statistic title="Total Data History" value={totalRecords} prefix={<LikeOutlined />} />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col span={8}>
           <Card bordered={false} className="shadow-sm">
-            <Statistic 
-              title="Kota / Stasiun Dipantau" 
-              value={uniqueCities} 
-              prefix={<EnvironmentOutlined />} 
-            />
+            <Statistic title="Stasiun Aktif" value={uniqueStations} prefix={<EnvironmentOutlined />} />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col span={8}>
           <Card bordered={false} className="shadow-sm">
             <Statistic 
-              title="Rata-rata AQI (Nasional)" 
-              value={avgAqiOverall} 
-              valueStyle={{ color: avgAqiOverall > 100 ? '#cf1322' : '#3f8600' }}
+              title="Rata-rata AQI (Historis)" 
+              value={avgAqiAllTime} 
+              valueStyle={{ color: avgAqiAllTime > 100 ? '#cf1322' : '#3f8600' }}
               prefix={<WarningOutlined />} 
-              suffix={avgAqiOverall > 100 ? '/ Unhealthy' : '/ Good'}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* --- SECTION 2: Charts --- */}
       <Row gutter={24}>
-        {/* Column Chart (Trend Harian) */}
         <Col xs={24} lg={14} style={{ marginBottom: 24 }}>
-          <Card title="Tren Rata-rata AQI (14 Hari Terakhir)" bordered={false} className="shadow-sm">
+          <Card title="Tren Rata-rata Kualitas Udara" bordered={false}>
             <div style={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <BarChart data={barData}>
@@ -162,24 +149,19 @@ const Dashboard: React.FC = () => {
           </Card>
         </Col>
 
-        {/* Pie Chart (Distribusi Kategori) */}
-        <Col xs={24} lg={10} style={{ marginBottom: 24 }}>
-          <Card title="Distribusi Kategori Polusi" bordered={false} className="shadow-sm">
+        <Col xs={24} lg={10}>
+          <Card title="Proporsi Kategori Pencemaran" bordered={false}>
             <div style={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <PieChart>
-                    <Pie
+                  <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    // FIX: Tambahkan (percent || 0) supaya aman
-                    label={({  percent }) => `${((percent || 0) * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
+                    outerRadius={80}
                     dataKey="value"
-                    >
-                    {/* Mapping warna berdasarkan nama kategori */}
+                    label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+                  >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#8884d8'} />
                     ))}
