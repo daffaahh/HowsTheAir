@@ -174,7 +174,7 @@ const Dashboard: React.FC = () => {
                     cy="50%"
                     labelLine={false}
                     // FIX: Tambahkan (percent || 0) supaya aman
-                    label={({ name, percent }) => `${((percent || 0) * 100).toFixed(0)}%`}
+                    label={({  percent }) => `${((percent || 0) * 100).toFixed(0)}%`}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
