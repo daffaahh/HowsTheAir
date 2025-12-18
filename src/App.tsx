@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, Menu, theme } from 'antd';
 import { DashboardOutlined, DatabaseOutlined, EnvironmentOutlined } from '@ant-design/icons';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DataManagement from './pages/DataManagement';
 import Dashboard from './pages/Dashboard';
 
