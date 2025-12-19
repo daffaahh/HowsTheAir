@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Card, message, Switch, Typography, Tag, Popconfirm, Input, Tooltip, Space, Modal, Form } from 'antd';
-import { PlusOutlined, DeleteOutlined, SearchOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, SearchOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { citiesService } from '../services/citiesService';
 import type { MonitoredCity } from '../types';

@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Cities from './pages/Cities';
 
 
-const { Header, Content, Footer, Sider } = Layout;
+const {  Content, Footer, Sider } = Layout;
 
 const App: React.FC = () => {
   const {

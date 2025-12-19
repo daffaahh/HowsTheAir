@@ -1,5 +1,5 @@
 import api from './api';
-import type { AirQuality, AuditLog, SyncResponse, AirQualityHistory } from '../types/index.ts';
+import type { AuditLog, SyncResponse, AirQualityHistory } from '../types/index.ts';
 
 export const airQualityService = {
   // Ambil semua data
@@ -21,10 +21,10 @@ export const airQualityService = {
     return response.data;
   },
 
-  getHistory: async (): Promise<AirQualityHistory[]> => {
-    // Panggil endpoint backend yang return data dari tabel AirQualityHistory
-    // Bisa tambahkan query param ?startDate=...&endDate=...
-    const response = await api.get('/air-quality/history'); 
+  getHistory: async (params?: { startDate?: string; endDate?: string }) => {
+    // Axios otomatis mengubah object 'params' menjadi query string:
+    // /air-quality/history?startDate=2023-01-01&endDate=2023-01-31
+    const response = await api.get<AirQualityHistory[]>('/air-quality/history', { params });
     return response.data;
   },
 };
