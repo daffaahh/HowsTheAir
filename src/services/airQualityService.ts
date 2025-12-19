@@ -3,8 +3,9 @@ import type { AirQuality, AuditLog, SyncResponse, AirQualityHistory } from '../t
 
 export const airQualityService = {
   // Ambil semua data
-  getAll: async () => {
-    const response = await api.get<AirQuality[]>('/air-quality');
+  getAll: async (params?: { search?: string; startDate?: string; endDate?: string }) => {
+    // Axios otomatis mengubah object params jadi query string (?search=abc)
+    const response = await api.get('/air-quality', { params });
     return response.data;
   },
 

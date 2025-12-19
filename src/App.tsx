@@ -18,8 +18,7 @@ const App: React.FC = () => {
     <Router>
       <Layout style={{ minHeight: '100vh' }}>
         <Sider breakpoint="lg" collapsedWidth="0">
-          <div className="demo-logo-vertical" style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
-          <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']}>
+          <Menu theme="dark"  style={{ marginTop : 20 }} mode="inline" defaultSelectedKeys={['1']}>
             <Menu.Item key="1" icon={<DashboardOutlined />}>
               <Link to="/">Dashboard</Link>
             </Menu.Item>
@@ -32,7 +31,6 @@ const App: React.FC = () => {
           </Menu>
         </Sider>
         <Layout>
-          <Header style={{ padding: 0, background: colorBgContainer }} />
           <Content style={{ margin: '24px 16px 0' }}>
             <div
               style={{

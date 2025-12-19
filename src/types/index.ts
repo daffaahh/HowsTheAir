@@ -5,6 +5,8 @@ export interface MonitoredCity {
   stationName: string; // Sesuaikan dengan backend (dulu 'name')
   keyword: string;
   isActive: boolean;
+  uid :number
+  createdAt : Date
 }
 
 export interface AirQuality {
@@ -42,6 +44,15 @@ export interface SyncResponse {
 }
 
 export interface CreateCityDto {
-  stringName: string;
+  // stringName: string;
   keyword: string;
+  stationName: string;
+  uid : number
+}
+
+export interface SearchStation {
+  uid: number;
+  name: string;
+  aqi: string;        // Perlu untuk display warna
+  keywordValue: string; // Format "@12345" untuk value option
 }
