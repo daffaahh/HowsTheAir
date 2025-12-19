@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3333';
+const API_BASE_URL = 'https://hows-the-air-40eve85ik-daffa-dhiya-ulhaqs-projects.vercel.app/';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
