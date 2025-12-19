@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://hows-the-air-40eve85ik-daffa-dhiya-ulhaqs-projects.vercel.app/';
+// Ganti port sesuai port NestJS kamu (default 3000)
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,6 +10,7 @@ const api = axios.create({
   },
 });
 
+// Interceptor (Optional: buat debug kalau ada error)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
