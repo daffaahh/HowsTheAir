@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Card, message, Switch, Typography, Tag, Popconfirm, Input, Tooltip, Space, Modal, Form } from 'antd';
-import { PlusOutlined, DeleteOutlined, SearchOutlined, EditOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, SearchOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { citiesService } from '../services/citiesService';
-import type { MonitoredCity } from '../types';
+import type { AirQualityHistory, MonitoredCity } from '../types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import AddStationModal from '../components/AddStationModal';
+import { airQualityService } from '../services/airQualityService';
 
 const { Title, Text } = Typography;
 
@@ -14,10 +15,14 @@ const Cities: React.FC = () => {
   const [cities, setCities] = useState<MonitoredCity[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchText, setSearchText] = useState(''); // State untuk filter lokal
+  const [searchText, setSearchText] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCity, setEditingCity] = useState<MonitoredCity | null>(null);
-  const [editForm] = Form.useForm(); // Form instance untuk edit
+  const [editForm] = Form.useForm();
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedStationHistory, setSelectedStationHistory] = useState<AirQualityHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedCityName, setSelectedCityName] = useState('');
 
   // 1. Fetch Data
   const fetchCities = async () => {
@@ -95,6 +100,25 @@ const Cities: React.FC = () => {
     );
   });
 
+ const handleViewHistory = async (record: MonitoredCity) => {
+    setSelectedCityName(record.stationName);
+    setIsHistoryModalOpen(true);
+    setHistoryLoading(true);
+    
+    try {
+      // Panggil endpoint history dengan filter cityId
+      const data = await airQualityService.getHistory({ 
+        cityId: record.id 
+        // startDate & endDate opsional, kalau kosong dia ambil 30 hari terakhir (default BE)
+      });
+      setSelectedStationHistory(data);
+    } catch (error) {
+      message.error('Gagal memuat history stasiun.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const columns: ColumnsType<MonitoredCity> = [
     {
       title: 'Nama Stasiun / Lokasi',
@@ -147,6 +171,16 @@ const Cities: React.FC = () => {
       key: 'action',
       width: 80,
       render: (_, record) => (
+        <Space>
+          {/* TOMBOL VIEW HISTORY */}
+          <Tooltip title="Lihat History Data">
+            <Button 
+              type="default" 
+              icon={<EyeOutlined />} 
+              onClick={() => handleViewHistory(record)} 
+            />
+          </Tooltip>
+
         <Popconfirm
           title="Hapus Stasiun?"
           description="Data history terkait stasiun ini juga akan hilang."
@@ -157,7 +191,34 @@ const Cities: React.FC = () => {
         >
           <Button type="text" danger icon={<DeleteOutlined />} />
         </Popconfirm>
+        </Space>
       ),
+    },
+  ];
+
+  const historyColumns: ColumnsType<AirQualityHistory> = [
+    {
+      title: 'Waktu Recorded',
+      dataIndex: 'recordedAt',
+      key: 'recordedAt',
+      render: (date) => format(new Date(date), 'dd MMM yyyy, HH:mm', { locale: localeId }),
+    },
+    {
+      title: 'AQI',
+      dataIndex: 'aqi',
+      key: 'aqi',
+      render: (aqi) => {
+        let color = 'green';
+        if (aqi > 50) color = 'gold';
+        if (aqi > 100) color = 'orange';
+        if (aqi > 150) color = 'red';
+        return <Tag color={color}>{aqi}</Tag>;
+      }
+    },
+    {
+      title: 'Kategori',
+      dataIndex: 'category',
+      key: 'category',
     },
   ];
 
@@ -193,6 +254,34 @@ const Cities: React.FC = () => {
           pagination={{ pageSize: 5, showSizeChanger: true }}
         />
       </Card>
+
+      <Modal
+        title={
+            <Space>
+                <EyeOutlined /> 
+                <span>History: {selectedCityName}</span>
+            </Space>
+        }
+        open={isHistoryModalOpen}
+        onCancel={() => setIsHistoryModalOpen(false)}
+        footer={[
+            <Button key="close" onClick={() => setIsHistoryModalOpen(false)}>
+                Tutup
+            </Button>
+        ]}
+        width={700}
+      >
+        <Table
+            columns={historyColumns}
+            dataSource={selectedStationHistory}
+            rowKey="id"
+            loading={historyLoading}
+            pagination={{ pageSize: 5 }} // Pagination kecil biar modal gak kepanjangan
+            size="small" // Tabel versi compact
+            scroll={{ y: 300 }} // Scrollable kalo datanya banyak
+        />
+      </Modal>
+
       <AddStationModal 
         visible={isModalOpen}
         onCancel={() => setIsModalOpen(false)}

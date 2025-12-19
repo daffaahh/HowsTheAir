@@ -21,9 +21,7 @@ export const airQualityService = {
     return response.data;
   },
 
-  getHistory: async (params?: { startDate?: string; endDate?: string }) => {
-    // Axios otomatis mengubah object 'params' menjadi query string:
-    // /air-quality/history?startDate=2023-01-01&endDate=2023-01-31
+  getHistory: async (params?: { startDate?: string; endDate?: string; cityId?: number }) => {
     const response = await api.get<AirQualityHistory[]>('/air-quality/history', { params });
     return response.data;
   },
