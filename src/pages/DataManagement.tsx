@@ -18,16 +18,13 @@ const [data, setData] = useState<AirQuality[]>([]);
   const [lastSync, setLastSync] = useState<AuditLog | null>(null);
   const [searchText, setSearchText] = useState('');
   
-  // Ref biar ga double fetch di React.StrictMode (Development mode)
   const isMounted = useRef(false);
 
-// --- 1. FETCH DATA (Updated) ---
   const fetchData = async (searchQuery = searchText) => {
     setLoading(true);
     try {
       const result = await airQualityService.getAll({ 
         search: searchQuery 
-        // Nanti bisa tambah startDate/endDate disini juga
       });
       setData(result);
       
@@ -42,17 +39,14 @@ const [data, setData] = useState<AirQuality[]>([]);
     }
   };
 
-  // --- 2. LOGIC SYNC ---
   const handleSync = async (isAuto = false) => {
     setSyncing(true);
     try {
       const res = await airQualityService.sync();
       
-      // Kalo auto sync, ga perlu notif heboh, cukup update data
       if (!isAuto) {
          message.success(`Sync Selesai! ${res.syncedCount} data terupdate.`);
       } else if (res.syncedCount > 0) {
-         // Opsional: Kasih tau user kalo ada data baru masuk pas dia buka page
          message.info('Data terbaru berhasil dimuat.');
       }
 
@@ -64,28 +58,22 @@ const [data, setData] = useState<AirQuality[]>([]);
     }
   };
 
-  // --- 3. SMART INIT (Fetch + Auto Sync Check) ---
   useEffect(() => {
     const initPage = async () => {
-      setLoading(true); // Loading awal tabel
-      const log = await fetchData(); // 1. Ambil data DB dulu
-      setLoading(false); // Tampilkan data DB segera
+      setLoading(true); 
+      const log = await fetchData();
+      setLoading(false); 
 
-      // 2. Cek apakah perlu Auto-Sync?
-      // Logic: Jika belum pernah sync ATAU sync terakhir > 15 menit yang lalu
       if (log) {
         const lastSyncDate = new Date(log.performedAt);
         const now = new Date();
         const diff = differenceInMinutes(now, lastSyncDate);
 
         if (diff > 15) { 
-          // console.log(`Data stale (${diff} min). Auto-syncing...`);
-          handleSync(true); // Jalankan sync mode 'silent' / auto
+          handleSync(true); 
         } else {
-          // console.log(`Data fresh (${diff} min). No sync needed.`);
         }
       } else {
-        // Belum pernah sync sama sekali -> Auto Sync
         handleSync(true);
       }
     };
@@ -94,29 +82,25 @@ const [data, setData] = useState<AirQuality[]>([]);
         initPage();
         isMounted.current = true;
     }
-  }, []); // Run sekali pas mount
+  }, []);
 
-  // --- HANDLER SEARCH ---
     const onSearch = (value: string) => {
-      setSearchText(value); // Update state
-      fetchData(value);     // Langsung fetch dengan query baru
+      setSearchText(value); 
+      fetchData(value);     
     };
 
-  // --- 3. KONFIGURASI KOLOM TABEL ---
   const columns: ColumnsType<AirQuality> = [
     {
       title: 'Keyword',
       key: 'keyword',
-      width: 150, // Opsional: atur lebar biar rapi
+      width: 150,
       render: (_, record) => {
         const text = record.monitoredCity?.keyword || '-';
-        // Visual: Biru untuk keyword biasa
         return <Tag color="blue">{text}</Tag>;
       },
       sorter: (a, b) => 
         (a.monitoredCity?.keyword || '').localeCompare(b.monitoredCity?.keyword || ''),
 
-      // Update logic filter untuk nested object
       filters: Array.from(new Set(data.map(item => item.monitoredCity?.keyword)))
         .filter(Boolean) // Hapus yang null/undefined
         .map(name => ({
@@ -129,10 +113,8 @@ const [data, setData] = useState<AirQuality[]>([]);
     {
       title: 'Nama Stasiun',
       key: 'stationName',
-      // Mengambil data dari nested object 'monitoredCity'
       render: (_, record) => record.monitoredCity?.stationName || 'N/A',
       
-      // Update logic sorting untuk nested object
       sorter: (a, b) => {
         const nameA = a.monitoredCity?.stationName || '';
         const nameB = b.monitoredCity?.stationName || '';
@@ -194,7 +176,6 @@ const [data, setData] = useState<AirQuality[]>([]);
         </div>
         
         <Space>
-          {/* Info Last Sync */}
           {lastSync && (
             <Tooltip title={`Detail: ${lastSync.details || '-'}`}>
                <Tag icon={<HistoryOutlined />} color="blue">
@@ -203,15 +184,10 @@ const [data, setData] = useState<AirQuality[]>([]);
             </Tooltip>
           )}
 
-          {/* Tombol Sync */}
           <Button 
             type="primary" 
             icon={<SyncOutlined spin={syncing} />} 
-            // --- PERBAIKAN DI SINI ---
-            // Jangan onClick={handleSync}
-            // Ganti jadi arrow function biar argumennya jelas
             onClick={() => handleSync(false)} 
-            // -------------------------
             loading={syncing}
             size="large"
           >
@@ -220,12 +196,10 @@ const [data, setData] = useState<AirQuality[]>([]);
         </Space>
       </div>
 
-      {/* Table Card */}
       <Card bordered={false} className="shadow-sm">
 
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
           
-          {/* SEARCH BAR BARU */}
           <Input.Search
             placeholder="Cari Keyword, Kota, atau Kategori..."
             allowClear

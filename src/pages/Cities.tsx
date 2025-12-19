@@ -24,7 +24,6 @@ const Cities: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedCityName, setSelectedCityName] = useState('');
 
-  // 1. Fetch Data
   const fetchCities = async () => {
     setLoading(true);
     try {
@@ -41,7 +40,6 @@ const Cities: React.FC = () => {
     fetchCities();
   }, []);
 
-  // 2. Handle Toggle
   const handleToggle = async (checked: boolean, id: number) => {
     try {
       // Optimistic Update
@@ -65,12 +63,10 @@ const Cities: React.FC = () => {
       const values = await editForm.validateFields();
       if (!editingCity) return;
 
-      // Call API
       await citiesService.update(editingCity.id, { keyword: values.keyword });
       
       message.success('Keyword berhasil diperbarui!');
       
-      // Update UI lokal
       setCities(prev => prev.map(c => c.id === editingCity.id ? { ...c, keyword: values.keyword } : c));
       
       setIsEditModalOpen(false);
@@ -80,7 +76,6 @@ const Cities: React.FC = () => {
     }
   };
 
-  // 3. Handle Delete (NEW)
   const handleDelete = async (id: number) => {
     try {
       await citiesService.delete(id);
@@ -106,10 +101,8 @@ const Cities: React.FC = () => {
     setHistoryLoading(true);
     
     try {
-      // Panggil endpoint history dengan filter cityId
       const data = await airQualityService.getHistory({ 
         cityId: record.id 
-        // startDate & endDate opsional, kalau kosong dia ambil 30 hari terakhir (default BE)
       });
       setSelectedStationHistory(data);
     } catch (error) {
@@ -147,7 +140,6 @@ const Cities: React.FC = () => {
       title: 'Ditambahkan',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      // Jika createdAt belum ada di interface FE, pastikan tambahkan opsional (?)
       render: (date) => date ? format(new Date(date), 'dd MMM yyyy', { locale: localeId }) : '-',
       sorter: (a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime(),
     },
@@ -172,7 +164,6 @@ const Cities: React.FC = () => {
       width: 80,
       render: (_, record) => (
         <Space>
-          {/* TOMBOL VIEW HISTORY */}
           <Tooltip title="Lihat History Data">
             <Button 
               type="default" 
@@ -224,10 +215,9 @@ const Cities: React.FC = () => {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <Title level={2} style={{ margin: 0 }}>Master Stasiun</Title>
+          <Title level={2} style={{ margin: 0 }}>Master Station</Title>
           <Text type="secondary">Kelola daftar target pemantauan kualitas udara.</Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
@@ -235,7 +225,6 @@ const Cities: React.FC = () => {
         </Button>
       </div>
 
-      {/* Toolbar & Table */}
       <Card bordered={false} className="shadow-sm">
         <div style={{ marginBottom: 16, maxWidth: 300 }}>
           <Input 
@@ -276,9 +265,9 @@ const Cities: React.FC = () => {
             dataSource={selectedStationHistory}
             rowKey="id"
             loading={historyLoading}
-            pagination={{ pageSize: 5 }} // Pagination kecil biar modal gak kepanjangan
-            size="small" // Tabel versi compact
-            scroll={{ y: 300 }} // Scrollable kalo datanya banyak
+            pagination={{ pageSize: 5 }} 
+            size="small" 
+            scroll={{ y: 300 }}
         />
       </Modal>
 

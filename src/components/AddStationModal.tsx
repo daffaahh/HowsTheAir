@@ -18,11 +18,8 @@ const AddStationModal: React.FC<AddStationModalProps> = ({ visible, onCancel, on
   const [options, setOptions] = useState<SearchStation[]>([]);
   const [fetching, setFetching] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  
-  // State untuk menyimpan apa yang diketik user
   const [searchText, setSearchText] = useState('');
 
-  // 1. Logic Search
   const fetchStation = async (value: string) => {
     if (!value) {
       setOptions([]);
@@ -41,19 +38,16 @@ const AddStationModal: React.FC<AddStationModalProps> = ({ visible, onCancel, on
 
   const debouncedFetch = useMemo(() => debounce(fetchStation, 800), []);
 
-  // Handler saat user ngetik
   const handleSearch = (val: string) => {
-    setSearchText(val); // Simpan text input user ("bangalore")
+    setSearchText(val);
     debouncedFetch(val);
   };
 
-  // 2. Logic Submit
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setConfirmLoading(true);
 
-      // values.uid berisi UID yang dipilih dari dropdown (value={opt.uid})
       const selectedStation = options.find(opt => opt.uid === values.uid);
 
       if (!selectedStation) {
@@ -62,9 +56,9 @@ const AddStationModal: React.FC<AddStationModalProps> = ({ visible, onCancel, on
       }
 
       await citiesService.create({
-        stationName: selectedStation.name, // Nama resmi dari API
-        uid: selectedStation.uid,          // UID untuk teknis
-        keyword: searchText,               // Text yang diketik user ("bangalore")
+        stationName: selectedStation.name,
+        uid: selectedStation.uid,         
+        keyword: searchText,              
       });
 
       message.success('Stasiun berhasil ditambahkan!');
@@ -91,7 +85,7 @@ const AddStationModal: React.FC<AddStationModalProps> = ({ visible, onCancel, on
       <Form form={form} layout="vertical">
         <Form.Item
           label="Cari & Pilih Stasiun"
-          name="uid" // Yang kita ambil valuenya adalah UID
+          name="uid" 
           rules={[{ required: true, message: 'Harap pilih stasiun' }]}
           help={`Tag yang akan disimpan: "${searchText || '-'}"`}
         >
@@ -99,14 +93,13 @@ const AddStationModal: React.FC<AddStationModalProps> = ({ visible, onCancel, on
             showSearch
             placeholder="Ketik nama kota..."
             filterOption={false}
-            onSearch={handleSearch} // Update state searchText disini
+            onSearch={handleSearch} 
             notFoundContent={fetching ? <Spin size="small" /> : null}
             style={{ width: '100%' }}
             size="large"
             defaultActiveFirstOption={false}
           >
             {options.map((opt) => (
-              // Value dropdown adalah UID
               <Option key={opt.uid} value={opt.uid}> 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

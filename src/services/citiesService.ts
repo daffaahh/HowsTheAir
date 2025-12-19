@@ -13,7 +13,6 @@ search: async (keyword: string) => {
     return response.data; 
   },
 
-
   // Tambah kota baru
   create: async (data: CreateCityDto) => {
     const response = await api.post<MonitoredCity>('/cities', data);
